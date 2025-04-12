@@ -63,7 +63,7 @@ public class Clock extends Application {
         dateLabel.setTextFill(Color.BLACK);
         dateLabel.setAlignment(Pos.CENTER);
 
-        // Установка даты между кружками
+        // Установка даты
         BorderPane.setAlignment(dateLabel, Pos.CENTER);
         BorderPane.setMargin(dateLabel, new Insets(0, 0, 30, 0));
         root.setBottom(dateLabel);
@@ -74,7 +74,7 @@ public class Clock extends Application {
         yearLabel.setTextFill(Color.BLACK);
         yearLabel.setAlignment(Pos.CENTER);
 
-        // Установка года между эллипсом и кругом
+        // Установка года
         BorderPane.setAlignment(yearLabel, Pos.CENTER);
         BorderPane.setMargin(yearLabel, new Insets(0, 0, 0, 0));
         root.setTop(yearLabel);
@@ -118,12 +118,30 @@ public class Clock extends Application {
         int minute = now.getMinute();
         int second = now.getSecond();
 
-        drawHand(gc, centerX, centerY,
-                (hour * 30 + minute * 0.5), CLOCK_RADIUS * 0.5,                4, Color.BLACK);
-        drawHand(gc, centerX, centerY,
-                (minute * 6 + second * 0.1), CLOCK_RADIUS * 0.8, 3, Color.BLACK);
-        drawHand(gc, centerX, centerY,
-                second * 6, CLOCK_RADIUS * 0.9, 1, Color.RED);
+        // Часовая стрелка с кружком
+        drawHourHand(gc, centerX, centerY,
+                (hour * 30 + minute * 0.5),
+                CLOCK_RADIUS * 0.5,
+                1,
+                Color.BLACK);
+
+        // Минутная стрелка с треугольным наконечником
+        drawMinuteSecondHand(gc, centerX, centerY,
+                (minute * 6 + second * 0.1),
+                CLOCK_RADIUS * 0.8,
+                1,
+                Color.BLACK,
+                12,
+                Color.BLACK);
+
+        // Секундная стрелка с треугольным наконечником
+        drawMinuteSecondHand(gc, centerX, centerY,
+                second * 6,
+                CLOCK_RADIUS * 0.9,
+                1,
+                Color.BLACK,
+                16,
+                Color.WHITE);
 
         // Центральный кружок
         gc.setFill(Color.WHITE);
@@ -131,47 +149,104 @@ public class Clock extends Application {
         gc.setStroke(Color.BLACK);
         gc.strokeOval(centerX - 5, centerY - 5, 10, 10);
 
-        // Зеленые кружки с обводкой
-        double circleRadius = 15;
-        double greenCircleY = HEIGHT - 70; // Сдвиг вверх
-        double circleOffsetX = ellipseRadiusX * 0.7; // Отступ от центра
-
-        // Левый кружок
-        gc.setFill(Color.rgb(154, 205, 50));
-        gc.fillOval(centerX - circleOffsetX - circleRadius,
-                greenCircleY - circleRadius,
-                circleRadius * 2,
-                circleRadius * 2);
-        gc.setStroke(Color.BLACK);
-        gc.setLineWidth(2);
-        gc.strokeOval(centerX - circleOffsetX - circleRadius,
-                greenCircleY - circleRadius,
-                circleRadius * 2,
-                circleRadius * 2);
-
-        // Правый кружок
-        gc.setFill(Color.rgb(154, 205, 50));
-        gc.fillOval(centerX + circleOffsetX - circleRadius,
-                greenCircleY - circleRadius,
-                circleRadius * 2,
-                circleRadius * 2);
-        gc.setStroke(Color.BLACK);
-        gc.setLineWidth(2);
-        gc.strokeOval(centerX + circleOffsetX - circleRadius,
-                greenCircleY - circleRadius,
-                circleRadius * 2,
-                circleRadius * 2);
+        // Зеленые кружки
+        drawSideCircles(gc, centerX);
     }
 
-    private void drawHand(GraphicsContext gc, double centerX, double centerY,
-                          double angleDeg, double length, double width, Color color) {
+    private void drawHourHand(GraphicsContext gc, double centerX, double centerY,
+                              double angleDeg, double length,
+                              double lineWidth, Color color) {
+        // Рисуем основную линию
         double angle = Math.toRadians(angleDeg - 90);
         double endX = centerX + Math.cos(angle) * length;
         double endY = centerY + Math.sin(angle) * length;
 
         gc.setStroke(color);
-        gc.setLineWidth(width);
+        gc.setLineWidth(lineWidth);
         gc.strokeLine(centerX, centerY, endX, endY);
+
+        // Рисуем кружок на конце
+        double circleRadius = 8;
+        double distanceFromEnd = 20;
+        double circleX = endX - Math.cos(angle) * distanceFromEnd;
+        double circleY = endY - Math.sin(angle) * distanceFromEnd;
+
+        gc.setFill(Color.WHITE);
+        gc.fillOval(circleX - circleRadius, circleY - circleRadius,
+                circleRadius*2, circleRadius*2);
+        gc.setStroke(Color.BLACK);
+        gc.strokeOval(circleX - circleRadius, circleY - circleRadius,
+                circleRadius*2, circleRadius*2);
+    }
+
+    private void drawMinuteSecondHand(GraphicsContext gc, double centerX, double centerY,
+                                      double angleDeg, double length,
+                                      double lineWidth, Color lineColor,
+                                      double arrowSize, Color arrowColor) {
+        // Рисуем основную линию
+        double angle = Math.toRadians(angleDeg - 90);
+        double endX = centerX + Math.cos(angle) * length;
+        double endY = centerY + Math.sin(angle) * length;
+
+        gc.setStroke(lineColor);
+        gc.setLineWidth(lineWidth);
+        gc.strokeLine(centerX, centerY, endX, endY);
+
+        // Рисуем треугольный наконечник
+        double angleLeft = angle + Math.toRadians(150);
+        double angleRight = angle - Math.toRadians(150);
+
+        double[] xPoints = {
+                endX,
+                endX + Math.cos(angleLeft) * arrowSize,
+                endX + Math.cos(angleRight) * arrowSize
+        };
+
+        double[] yPoints = {
+                endY,
+                endY + Math.sin(angleLeft) * arrowSize,
+                endY + Math.sin(angleRight) * arrowSize
+        };
+
+        gc.setFill(arrowColor);
+        gc.fillPolygon(xPoints, yPoints, 3);
+        gc.setStroke(Color.BLACK);
+        gc.strokePolygon(xPoints, yPoints, 3);
+    }
+
+    private void drawSideCircles(GraphicsContext gc, double centerX) {
+        double circleRadius = 15;
+        double yPosition = HEIGHT - 70;
+        double xOffset = ellipseRadiusX * 0.7;
+
+        // Левый кружок
+        gc.setFill(Color.rgb(154, 205, 50));
+        gc.fillOval(
+                centerX - xOffset - circleRadius,
+                yPosition - circleRadius,
+                circleRadius * 2,
+                circleRadius * 2
+        );
+        gc.strokeOval(
+                centerX - xOffset - circleRadius,
+                yPosition - circleRadius,
+                circleRadius * 2,
+                circleRadius * 2
+        );
+
+        // Правый кружок
+        gc.fillOval(
+                centerX + xOffset - circleRadius,
+                yPosition - circleRadius,
+                circleRadius * 2,
+                circleRadius * 2
+        );
+        gc.strokeOval(
+                centerX + xOffset - circleRadius,
+                yPosition - circleRadius,
+                circleRadius * 2,
+                circleRadius * 2
+        );
     }
 
     private void drawRomanNumerals(GraphicsContext gc, double centerX, double centerY, double radius) {
@@ -230,8 +305,8 @@ public class Clock extends Application {
     }
 
     public static void main(String[] args) {
-        ellipseRadiusX = 300; // Устанавливаем радиус эллипса по умолчанию
-        ellipseRadiusY = 200; // Устанавливаем радиус эллипса по умолчанию
+        ellipseRadiusX = 300;
+        ellipseRadiusY = 200;
         launch(args);
     }
 }
